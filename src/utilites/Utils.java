@@ -17,7 +17,15 @@ public class Utils {
             sort(list, NAME_MODE, dec);
         }
 
-        //bubble sort
+        /*
+        Bubble sort
+        Swapping:
+            Product pa = get(j), pb = get(j + 1);
+            remove(pa);
+            remove(pb);
+            add(a, pb);
+            add(b, pa);
+         */
         for (int i = 0; i < n - 1; i++) {
             for (int j = 0; j < n - 1 - i; j++) {
                 Product pj = list.get(j), pj1 = list.get(j + 1);
@@ -43,12 +51,6 @@ public class Utils {
             }
         }
 
-        /*
-        Swapping:
-            Product temp = get(a);
-            list.add(a, get(b));
-            list.add(b, temp);
-         */
         if (dec) {
             for (int i = 0; i < n / 2; i++) {
                 list.swap(i, n - i - 1);
@@ -64,7 +66,6 @@ public class Utils {
     };
 
     public static ProductList filter(ProductList list, Category c) {
-        list = new ProductList(list);
         for (Product p : list.toArray(new Product[list.size()])) {
             if (!p.category.equals(c)) {
                 list.remove(p);
@@ -74,14 +75,14 @@ public class Utils {
     }
 
     //This function does not check mispelled undr 
-    public static ProductList search(ProductList list, String in) {
+    public static ProductList search(ProductList list, String s) {
         ProductList result = new ProductList();
 
-        if (in.isEmpty()) {
+        if (s.isEmpty()) {
             return result;
         }
 
-        in = in.toLowerCase().replace(" ", ":");
+        String in = s.toLowerCase().replace(" ", ":");
         String a[] = in.split(":");
         Vector<String> keys = new Vector<>();
         keys.addAll(Arrays.asList(a));
@@ -132,8 +133,8 @@ public class Utils {
         return result;
     }
 
-    public static int randInt(int min, int max) {
-        Random rand = new Random();
-        return rand.nextInt((max - min) + 1) + min;
+    public static int randomInt(int min, int max) {
+        Random r = new Random();
+        return r.nextInt((max - min) + 1) + min;
     }
 }
