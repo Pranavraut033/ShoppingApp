@@ -1,6 +1,7 @@
 package product;
 
 import java.util.*;
+import ui.ListItem;
 import utilites.*;
 
 /*Category: 
@@ -32,7 +33,7 @@ public class ProductList extends Vector<Product> {
         All, APPLIANCES, BOOKS, ELECTRONICS, GROCERY, MEDICINES, TOYS
     }
 
-    public static ProductList Database() {
+    public static ProductList getDatabase() {
         ProductList all = new ProductList();
         all.add(new Product("Google Pixel 2",
                 "A android smartphone by google", 61000, Category.APPLIANCES));
@@ -63,7 +64,7 @@ public class ProductList extends Vector<Product> {
         Utils.sort(this, Utils.PRICE_MODE, dec);
     }
 
-    public void sortByCat(boolean dec) {
+    public void sortByCategory(boolean dec) {
         Utils.sort(this, Utils.CAT_MODE, dec);
     }
 

@@ -18,7 +18,6 @@ public class Utils {
         }
 
         /*
-        Bubble sort
         Swapping:
             Product pa = get(j), pb = get(j + 1);
             remove(pa);
@@ -74,7 +73,7 @@ public class Utils {
         return list;
     }
 
-    //This function does not check mispelled undr 
+    //This function does not check mispelled undr
     public static ProductList search(ProductList list, String s) {
         ProductList result = new ProductList();
 
@@ -90,8 +89,7 @@ public class Utils {
 
         for (Product p : list) {
             for (String key : keys) {
-                String c = key.length() < 3 ? p.name
-                        : p.name + p.description + p.price + p.category.toString();
+                String c = p.name + p.description + p.price + p.category.toString();
                 c = c.toLowerCase();
                 if (c.contains(key) && result.indexOf(p) == -1) {
                     result.add(p);

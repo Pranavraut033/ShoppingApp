@@ -15,31 +15,38 @@ import product.ProductList.Category;
 @SuppressWarnings({"override", "Convert2Lambda"})
 public class ShopApplet extends Applet implements ActionListener {
 
+    String key = "";
+    boolean empty;
+    ProductList db = ProductList.getDatabase();
+    ProductList shopItems = new ProductList(db);
+    ProductList cartItems = new ProductList();
+
+    Container shop = new Container();
+
     Container navBar = new Container();
     JButton back = new JButton("Back");
     JTextField searchBar = new JTextField("Search...");
     JButton buy = new JButton("Add to cart");
-    JButton next = new JButton("Cart");
+    JButton next = new JButton("Cart (" + cartItems.size() + ")");
 
     Container sideMenu = new Container();
-    Label sideTitle = new Label("Filter");
+    JLabel sideTitle = new JLabel("Filters");
     JComboBox<String> sortOption = new JComboBox<>();
     JComboBox<Category> categoryOption = new JComboBox<>();
     JButton reset = new JButton("Reset");
 
-    ProductList db = ProductList.getDatabase();
-    ProductList list = new ProductList(db);
-    JList<Product> shopItems = new JList<>();
-    ProductList cartItems = new ProductList();
-    String key = "";
+    JList<Product> shopItemList = new JList<>();
+    JScrollPane pane = new JScrollPane(shopItemList);
+    JLabel emptyMSG = new JLabel();
 
     public void init() {
         setSize(900, 506);
 
-        sideTitle.setForeground(Color.decode("#EEEEEE"));
-        sideTitle.setBackground(Color.decode("#757575"));
-        sideTitle.setAlignment(Label.CENTER);
+        sideTitle.setForeground(Color.decode("#FFFFFF"));
+        sideTitle.setFont(new Font(null, Font.BOLD, 13));
 
+        pane.setOpaque(false);
+        pane.getViewport().setOpaque(false);
         JButton[] btns = new JButton[]{
             next, back, reset, buy
         };
@@ -63,6 +70,14 @@ public class ShopApplet extends Applet implements ActionListener {
                 }
                 key = searchBar.getText().replace("Search...", "");
                 updateList();
+
+                if (shopItems.isEmpty() && !empty) {
+                    if (key.length() == 1) {
+                        emptyMSG.setText("Write a longer word...");
+                    } else {
+                        emptyMSG.setText("Nothing Found for \"" + key + "\"");
+                    }
+                }
             }
         });
         searchBar.addFocusListener(new FocusListener() {
@@ -73,10 +88,10 @@ public class ShopApplet extends Applet implements ActionListener {
             public void focusLost(FocusEvent fe) {
                 if (!iskeyAvilable()) {
                     searchBar.setText("Search...");
-                    key = "";
                 }
             }
         });
+
         for (Category cat : Category.values()) {
             categoryOption.addItem(cat);
         }
@@ -84,6 +99,9 @@ public class ShopApplet extends Applet implements ActionListener {
             public void itemStateChanged(ItemEvent ie) {
                 if (ie.getStateChange() == ItemEvent.SELECTED) {
                     updateList();
+                    if (shopItems.isEmpty() && !empty) {
+                        emptyMSG.setText("Nothing Found... Try changing filter selection");
+                    }
                 }
             }
         });
@@ -99,6 +117,9 @@ public class ShopApplet extends Applet implements ActionListener {
             public void itemStateChanged(ItemEvent ie) {
                 if (ie.getStateChange() == ItemEvent.SELECTED) {
                     updateList();
+                    if (shopItems.isEmpty() && !empty) {
+                        emptyMSG.setText("Nothing Found... Try changing filter selection");
+                    }
                 }
             }
 
@@ -106,14 +127,15 @@ public class ShopApplet extends Applet implements ActionListener {
 
         back.setVisible(false);
         reset.setVisible(false);
+
         buy.setVisible(false);
 
-        shopItems.setListData(list);
-        shopItems.setCellRenderer(new ListItem());
-        shopItems.addListSelectionListener(new ListSelectionListener() {
-            @Override
+        shopItemList.setListData(shopItems);
+        shopItemList.setCellRenderer(new ListItem());
+        shopItemList.setOpaque(false);
+        shopItemList.addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent lse) {
-                int[] is = shopItems.getSelectedIndices();
+                int[] is = shopItemList.getSelectedIndices();
                 buy.setVisible(is.length != 0);
             }
         });
@@ -128,11 +150,16 @@ public class ShopApplet extends Applet implements ActionListener {
         navBar.add(searchBar, BorderLayout.CENTER);
         navBar.add(c, BorderLayout.EAST);
 
+        JLabel l1 = new JLabel("Sort: ");
+        l1.setForeground(Color.decode("#BDBDBD"));
+        JLabel l2 = new JLabel("Shop by Category:");
+        l2.setForeground(Color.decode("#BDBDBD"));
+
         Container opts = new Container();
         opts.setLayout(new GridLayout(0, 1, 10, 10));
-        opts.add(new JLabel("Sort: "));
+        opts.add(l1);
         opts.add(sortOption);
-        opts.add(new JLabel("Shop by Category:"));
+        opts.add(l2);
         opts.add(categoryOption);
         opts.add(reset);
 
@@ -144,63 +171,81 @@ public class ShopApplet extends Applet implements ActionListener {
         sideMenu.add(sideTitle, BorderLayout.NORTH);
         sideMenu.add(sideOptions, BorderLayout.CENTER);
 
-        Container shop = new Container();
+        emptyMSG.setAlignmentX(CENTER_ALIGNMENT);
+        emptyMSG.setAlignmentY(CENTER_ALIGNMENT);
+        emptyMSG.setFont(new Font(null, Font.BOLD, 20));
+        emptyMSG.setForeground(Color.WHITE);
+
         shop.setLayout(new BorderLayout(10, 10));
         shop.add(navBar, BorderLayout.NORTH);
         shop.add(sideMenu, BorderLayout.WEST);
-        shop.add(new JScrollPane(shopItems), BorderLayout.CENTER);
-
+        shop.add(pane, BorderLayout.CENTER);
         setLayout(new CardLayout(10, 10));
         add(shop);
+    }
 
-        setBackground(Color.decode("#eeeeee"));
-        shop.setBackground(Color.decode("#eeeeee"));
-        navBar.setBackground(Color.decode("#eeeeee"));
-        sideMenu.setBackground(Color.decode("#eeeeee"));
+    public void paint(Graphics graphics) {
+        Image image = getImage(getCodeBase(), "background.jpg");
+        graphics.drawImage(image, 0, 0, (int) getBounds().getWidth(), (int) getBounds().getHeight(), this);
+        super.paint(graphics);
     }
 
     public void actionPerformed(ActionEvent e) {
         Object o = e.getSource();
         if (o == next) {
-            if (isOnCart()) {
+            if (isOnHome()) {
                 next.setText("Check out");
                 back.setVisible(true);
+                shopItemList.setListData(cartItems);
             } else {
             }
         } else if (o == back) {
-            if (isOnHome()) {
-                next.setText("Cart");
-            }
             searchBar.setText("Search...");
             key = "";
             updateList();
             back.setVisible(false);
+            if (isOnHome()) {
+                next.setText("Cart (" + cartItems.size() + ")");
+            }
         } else if (o == reset) {
             categoryOption.setSelectedIndex(0);
             sortOption.setSelectedIndex(0);
             updateList();
         } else if (o == buy) {
-            int[] is = shopItems.getSelectedIndices();
+            int[] is = shopItemList.getSelectedIndices();
 
             if (is.length != 0) {
                 ProductList pl = new ProductList();
                 for (int i : is) {
-                    pl.add(list.get(i));
+                    pl.add(shopItems.get(i));
                 }
 
                 cartItems.addAll(pl);
                 db.removeAll(pl);
-                list.removeAll(pl);
-                shopItems.setListData(list);
-
+                shopItems.removeAll(pl);
+                shopItemList.setListData(shopItems);
                 next.setText("Cart (" + cartItems.size() + ")");
             }
             buy.setVisible(false);
         }
+
+        if (isOnHome()) {
+            if (shopItems.isEmpty()) {
+                emptyMSG.setText("Shop Empty...  Come back later");
+                shop.remove(pane);
+                shop.add(emptyMSG, BorderLayout.CENTER);
+                repaint();
+                empty = true;
+            } else {
+                shop.remove(emptyMSG);
+                shop.add(pane, BorderLayout.CENTER);
+                repaint();
+            }
+        }
     }
 
     private void filter() {
-        list = new ProductList(db);
+        shopItems = new ProductList(db);
         int sI = sortOption.getSelectedIndex(), cI = categoryOption.getSelectedIndex();
         reset.setVisible(sI != 0 || cI != 0);
 
@@ -211,7 +256,7 @@ public class ShopApplet extends Applet implements ActionListener {
         if (cI != 0) {
             for (Category c : Category.values()) {
                 if (cI == c.ordinal()) {
-                    list.filter(c);
+                    shopItems.filter(c);
                     break;
                 }
             }
@@ -220,17 +265,18 @@ public class ShopApplet extends Applet implements ActionListener {
         switch (sI) {
             case 1:
             case 2:
-                list.sortByPrice(sI == 2);
+                shopItems.sortByPrice(sI == 2);
                 break;
             case 3:
             case 4:
-                list.sortByName(sI == 4);
+                shopItems.sortByName(sI == 4);
                 break;
             case 5:
             case 6:
-                list.sortByCategory(sI == 6);
+                shopItems.sortByCategory(sI == 6);
                 break;
         }
+
     }
 
     private void updateList() {
@@ -238,22 +284,32 @@ public class ShopApplet extends Applet implements ActionListener {
         if (!iskeyAvilable()) {
             back.setVisible(false);
         } else {
-            list = list.search(key);
+            shopItems = shopItems.search(key);
             back.setVisible(true);
         }
 
-        shopItems.setListData(list);
+        shopItemList.setListData(shopItems);
+
+        if (shopItems.isEmpty()) {
+            shop.remove(pane);
+            shop.add(emptyMSG, BorderLayout.CENTER);
+            repaint();
+        } else {
+            shop.remove(emptyMSG);
+            shop.add(pane, BorderLayout.CENTER);
+            repaint();
+        }
     }
 
     private boolean iskeyAvilable() {
         return !key.isEmpty();
     }
 
-    private boolean isOnHome() {
+    private boolean isOnCart() {
         return next.getText().contains("Check out") && searchBar.getText().equals("Search...");
     }
 
-    private boolean isOnCart() {
+    private boolean isOnHome() {
         return next.getText().contains("Cart");
     }
 }
