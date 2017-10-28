@@ -13,8 +13,8 @@ public class ListItem extends JTextArea implements ListCellRenderer<Product> {
         g.setColor(isSelected ? Color.WHITE : Color.decode("#eeeeee"));
         g.fillRect(5, 10, getWidth() - 10, getHeight() - 20);
         g.setColor(isSelected ? Color.BLUE : Color.BLACK);
-        g.drawRect(5, 10, getWidth() - 10, getHeight() - 20);
-        g.drawRect(6, 11, getWidth() - 12, getHeight() - 22);
+        g.drawRect(4, 10, getWidth() - 8, getHeight() - 20);
+        g.drawRect(5, 11, getWidth() - 10, getHeight() - 22);
         super.paint(g);
     }
 
@@ -36,5 +36,4 @@ public class ListItem extends JTextArea implements ListCellRenderer<Product> {
         setBorder(paddingBorder);
         return this;
     }
-
 }

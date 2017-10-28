@@ -81,8 +81,8 @@ public class Utils {
             return result;
         }
 
-        String in = s.toLowerCase().replace(" ", ":");
-        String a[] = in.split(":");
+        String in = s.toLowerCase();
+        String a[] = in.split(" ");
         Vector<String> keys = new Vector<>();
         keys.addAll(Arrays.asList(a));
         keys.removeAll(Arrays.asList(COMMON_TERMS));
