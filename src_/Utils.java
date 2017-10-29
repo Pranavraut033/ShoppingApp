@@ -57,7 +57,7 @@ public class Utils {
         }
     }
 
-    private static String[] COMMON_TERMS = new String[]{
+    private final static String[] COMMON_TERMS = new String[]{
         "in", "with", "on", "by", "under", "a", "the",
         "an", "then", "that", "when", "also", "as",
         "get", "you", "will", "used", "gain", "can",
@@ -81,8 +81,8 @@ public class Utils {
             return result;
         }
 
-        String in = s.toLowerCase().replace(" ", ":");
-        String a[] = in.split(":");
+        String in = s.toLowerCase();
+        String a[] = in.split(" ");
         Vector<String> keys = new Vector<>();
         keys.addAll(Arrays.asList(a));
         keys.removeAll(Arrays.asList(COMMON_TERMS));

@@ -8,6 +8,8 @@ import java.util.*;
 import java.applet.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import javax.swing.*;
 import javax.swing.event.*;
 import product.*;
@@ -16,50 +18,95 @@ import product.ProductList.Category;
 @SuppressWarnings({"override", "Convert2Lambda"})
 public class ShopApplet extends Applet implements ActionListener {
 
+    final int HOME = 1;
+    final int SEARCH = 2;
+    final int CART = 3;
+    final int DELIVERY_OPTIONS = 4;
+    final int PAYMENT = 5;
+    final String FILTER_MSG = "Nothing Found... Try changing filter selection";
+    final String CART_MSG = "Cart Empty :( Start Shopping...";
+    final String CVV = "453";
+
+    int page = HOME;
+    double total = 0d;
+    int extra = 0;
     String key = "";
-    boolean empty;
     ProductList db = ProductList.getDatabase();
     ProductList shopItems = new ProductList(db);
     ProductList cartItems = new ProductList();
     Vector<Integer> selectedCat = new Vector<>();
+
+    ImageIcon backIcon;
+    ImageIcon cartIcon;
+    ImageIcon addIcon;
+    ImageIcon removeIcon;
+    ImageIcon checkOutIcon;
+    ImageIcon payIcon;
 
     Container shop = new Container();
 
     Container navBar = new Container();
     JButton back;
     JTextField searchBar = new JTextField("Search...");
-    JButton buy;
+    JLabel title = new JLabel();
+    JButton action;
     JButton next;
+
+    Container content = new Container();
 
     Container sideMenu = new Container();
     JLabel sideTitle = new JLabel("Filters");
     JComboBox<String> sortOption = new JComboBox<>();
     JCheckBox[] catOptions = new JCheckBox[7];
-
-    //JComboBox<Category> categoryOption = new JComboBox<>();
     JButton reset = new JButton("Reset");
 
-    JList<Product> shopItemList = new JList<>();
-    JScrollPane pane = new JScrollPane(shopItemList);
+    JList<Product> itemList = new JList<>();
+    JScrollPane pane = new JScrollPane(itemList);
     JLabel emptyMSG = new JLabel();
-    private int page;
+
+    Container deliveryContent = new Container();
+    JRadioButton standardButton = new JRadioButton("Standard Delivery-Expect package to be delivered in 7 working days");
+    JRadioButton expressButton = new JRadioButton("Express Delivery-Expect package to be delivered tomorrow: +Rs 250");
+
+    Container paymentContent = new Container();
+    JLabel ccInfo = new JLabel("Credit Card Information");
+    JLabel sccNumber = new JLabel("Saved CC Number:");
+    JLabel ccNumber = new JLabel("XXXX-XXXX-XXXX-6540");
+    JLabel enterCC = new JLabel("Enter CVV:");
+    JPasswordField cvvField = new JPasswordField(3);
+
+    Container bottomBar = new Container();
+    JButton bNext;
+    JLabel summary = new JLabel();
 
     public void init() {
         setSize(900, 506);
 
-        back = new JButton(new ImageIcon(getImage(getCodeBase(), "back.png")));
-        next = new JButton("Cart", new ImageIcon(getImage(getCodeBase(), "cart.png")));
-        buy = new JButton(new ImageIcon(getImage(getCodeBase(), "buy.png")));
+        backIcon = new ImageIcon(getImage(getCodeBase(), "back.png"));
+        cartIcon = new ImageIcon(getImage(getCodeBase(), "cart.png"));
+        addIcon = new ImageIcon(getImage(getCodeBase(), "add.png"));
+        removeIcon = new ImageIcon(getImage(getCodeBase(), "remove.png"));
+        checkOutIcon = new ImageIcon(getImage(getCodeBase(), "check_out.png"));
+        payIcon = new ImageIcon(getImage(getCodeBase(), "pay.png"));
 
-        sideTitle.setForeground(Color.decode("#FFFFFF"));
+        back = new JButton(backIcon);
+        next = new JButton("Cart (0)", cartIcon);
+        action = new JButton(addIcon);
+        bNext = new JButton(payIcon);
+
+        back.setToolTipText("Back");
         sideTitle.setFont(new Font(null, Font.BOLD, 13));
+        sideTitle.setForeground(Color.WHITE);
+
+        for (JLabel l : new JLabel[]{title, summary}) {
+            l.setFont(new Font(null, Font.BOLD, 24));
+            l.setForeground(Color.WHITE);
+        }
 
         pane.setOpaque(false);
         pane.getViewport().setOpaque(false);
-        JButton[] btns = new JButton[]{
-            next, back, reset, buy
-        };
-        for (JButton b : btns) {
+
+        for (JButton b : new JButton[]{next, back, reset, action, bNext}) {
             b.setBackground(Color.decode("#1976D2"));
             b.setForeground(Color.decode("#ffffff"));
             b.addActionListener(this);
@@ -74,20 +121,24 @@ public class ShopApplet extends Applet implements ActionListener {
             }
 
             public void keyReleased(KeyEvent ke) {
-                if (ke.getKeyCode() == KeyEvent.VK_ESCAPE) {
-                    searchBar.setText("Search...");
+                if (page == CART) {
+                    initHome();
                 }
-                key = searchBar.getText().replace("Search...", "");
+                page = SEARCH;
+                key = searchBar.getText();
+                sideMenu.setVisible(true);
+                if (ke.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    initHome();
+                }
                 updateList();
 
-                if (shopItems.isEmpty() && !empty) {
-                    if (key.length() == 1) {
-                        emptyMSG.setText("Write a longer word...");
+                if (shopItems.isEmpty()) {
+                    if (key.length() < 3) {
+                        emptyMSG.setText("Nothing Found... Try Typing a longer word...");
                     } else {
                         emptyMSG.setText("Nothing Found for \"" + key + "\"");
                     }
                 }
-                sideMenu.setVisible(!key.isEmpty());
             }
         });
         searchBar.addFocusListener(new FocusListener() {
@@ -98,6 +149,7 @@ public class ShopApplet extends Applet implements ActionListener {
             public void focusLost(FocusEvent fe) {
                 if (!iskeyAvilable()) {
                     searchBar.setText("Search...");
+                    initHome();
                 }
             }
         });
@@ -113,38 +165,39 @@ public class ShopApplet extends Applet implements ActionListener {
             public void itemStateChanged(ItemEvent ie) {
                 if (ie.getStateChange() == ItemEvent.SELECTED) {
                     updateList();
-                    if (shopItems.isEmpty() && !empty) {
+                    if (shopItems.isEmpty()) {
                         emptyMSG.setText("Nothing Found... Try changing filter selection");
                     }
                 }
             }
 
         });
+        for (Container c : new Container[]{back, reset, action, bNext}) {
+            c.setVisible(false);
+        }
 
-        back.setVisible(false);
-        reset.setVisible(false);
-
-        buy.setVisible(false);
-
-        shopItemList.setListData(shopItems);
-        shopItemList.setCellRenderer(new ListItem());
-        shopItemList.setOpaque(false);
-        shopItemList.addListSelectionListener(new ListSelectionListener() {
+        itemList.setListData(shopItems);
+        itemList.setCellRenderer(new ListItem());
+        itemList.setOpaque(false);
+        itemList.addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent lse) {
-                int[] is = shopItemList.getSelectedIndices();
-                buy.setVisible(is.length != 0);
+                int[] is = itemList.getSelectedIndices();
+                action.setVisible(is.length != 0);
             }
         });
 
         Container c = new Container();
         c.setLayout(new BorderLayout(10, 10));
         c.add(next, BorderLayout.EAST);
-        c.add(buy, BorderLayout.CENTER);
+        c.add(action, BorderLayout.CENTER);
 
         navBar.setLayout(new BorderLayout(10, 10));
         navBar.add(back, BorderLayout.WEST);
         navBar.add(searchBar, BorderLayout.CENTER);
         navBar.add(c, BorderLayout.EAST);
+
+        bottomBar.setLayout(new BorderLayout(10, 10));
+        content.setLayout(new BorderLayout(10, 10));
 
         JLabel l1 = new JLabel("Sort: ");
         l1.setForeground(Color.decode("#BDBDBD"));
@@ -157,23 +210,13 @@ public class ShopApplet extends Applet implements ActionListener {
         opts.add(sortOption);
         opts.add(l2);
         for (int i = 0; i < catOptions.length; i++) {
-            final int fi = i + 1;
-            catOptions[i] = new JCheckBox(Category.values()[fi].name());
+            catOptions[i] = new JCheckBox(Category.values()[i].name());
             catOptions[i].addItemListener(new ItemListener() {
                 public void itemStateChanged(ItemEvent ie) {
-                    if (ie.getStateChange() == ItemEvent.SELECTED) {
-                        selectedCat.add(fi);
-                    } else {
-                        selectedCat.remove(fi);
-                    }
                     updateList();
-                    if (shopItems.isEmpty() && !empty) {
-                        emptyMSG.setText("Nothing Found... Try changing filter selection");
+                    if (shopItems.isEmpty()) {
+                        emptyMSG.setText(FILTER_MSG);
                     }
-                    if (selectedCat.isEmpty()) {
-                        selectedCat.add(0);
-                    }
-                    System.out.println(selectedCat.toString());
                 }
             });
             catOptions[i].setOpaque(false);
@@ -191,15 +234,105 @@ public class ShopApplet extends Applet implements ActionListener {
         sideMenu.add(sideOptions, BorderLayout.CENTER);
         sideMenu.setVisible(false);
 
-        emptyMSG.setAlignmentX(CENTER_ALIGNMENT);
-        emptyMSG.setAlignmentY(CENTER_ALIGNMENT);
         emptyMSG.setFont(new Font(null, Font.BOLD, 20));
         emptyMSG.setForeground(Color.WHITE);
+        emptyMSG.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        content.add(sideMenu, BorderLayout.WEST);
+        content.add(pane, BorderLayout.CENTER);
+
+        standardButton.setOpaque(false);
+        standardButton.setForeground(Color.WHITE);
+        standardButton.setFont(new Font(null, Font.BOLD, 14));
+        standardButton.setSelected(true);
+
+        expressButton.setOpaque(false);
+        expressButton.setForeground(Color.WHITE);
+        expressButton.setFont(new Font(null, Font.BOLD, 14));
+
+        standardButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                extra = 0;
+                summary.setText("Total: " + total);
+                expressButton.setSelected(false);
+            }
+        });
+        expressButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                extra = 250;
+                summary.setText("Total: " + total + " +" + extra);
+                standardButton.setSelected(false);
+            }
+        });
+
+        SpringLayout layout1 = new SpringLayout();
+        layout1.putConstraint(SpringLayout.HORIZONTAL_CENTER, standardButton,
+                0, SpringLayout.HORIZONTAL_CENTER, deliveryContent);
+        layout1.putConstraint(SpringLayout.VERTICAL_CENTER, standardButton,
+                -30, SpringLayout.VERTICAL_CENTER, deliveryContent);
+        layout1.putConstraint(SpringLayout.HORIZONTAL_CENTER, expressButton,
+                0, SpringLayout.HORIZONTAL_CENTER, deliveryContent);
+        layout1.putConstraint(SpringLayout.VERTICAL_CENTER, expressButton,
+                30, SpringLayout.VERTICAL_CENTER, deliveryContent);
+        deliveryContent.setLayout(layout1);
+        deliveryContent.add(standardButton);
+        deliveryContent.add(expressButton);
+
+        SpringLayout layout2 = new SpringLayout();
+
+        JPanel panel2 = new JPanel();
+        panel2.setPreferredSize(new Dimension(440, 150));
+        panel2.setBorder(BorderFactory.createLineBorder(Color.WHITE, 3));
+        panel2.setOpaque(false);
+
+        ccInfo.setForeground(Color.WHITE);
+        ccInfo.setPreferredSize(new Dimension(200, 40));
+        sccNumber.setForeground(Color.WHITE);
+        ccNumber.setForeground(Color.WHITE);
+        ccNumber.setPreferredSize(new Dimension(200, 40));
+        enterCC.setForeground(Color.WHITE);
+
+        layout2.putConstraint(SpringLayout.HORIZONTAL_CENTER, panel2,
+                0, SpringLayout.HORIZONTAL_CENTER, paymentContent);
+        layout2.putConstraint(SpringLayout.VERTICAL_CENTER, panel2,
+                0, SpringLayout.VERTICAL_CENTER, paymentContent);
+        layout2.putConstraint(SpringLayout.HORIZONTAL_CENTER, ccInfo,
+                30, SpringLayout.HORIZONTAL_CENTER, paymentContent);
+        layout2.putConstraint(SpringLayout.VERTICAL_CENTER, ccInfo,
+                -50, SpringLayout.VERTICAL_CENTER, paymentContent);
+        layout2.putConstraint(SpringLayout.HORIZONTAL_CENTER, sccNumber,
+                -100, SpringLayout.HORIZONTAL_CENTER, paymentContent);
+        layout2.putConstraint(SpringLayout.VERTICAL_CENTER, sccNumber,
+                -20, SpringLayout.VERTICAL_CENTER, paymentContent);
+        layout2.putConstraint(SpringLayout.VERTICAL_CENTER, enterCC,
+                20, SpringLayout.VERTICAL_CENTER, paymentContent);
+        layout2.putConstraint(SpringLayout.HORIZONTAL_CENTER, ccNumber,
+                100, SpringLayout.HORIZONTAL_CENTER, paymentContent);
+        layout2.putConstraint(SpringLayout.VERTICAL_CENTER, ccNumber,
+                -20, SpringLayout.VERTICAL_CENTER, paymentContent);
+        layout2.putConstraint(SpringLayout.HORIZONTAL_CENTER, enterCC,
+                -100, SpringLayout.HORIZONTAL_CENTER, paymentContent);
+        layout2.putConstraint(SpringLayout.HORIZONTAL_CENTER, cvvField,
+                20, SpringLayout.HORIZONTAL_CENTER, paymentContent);
+        layout2.putConstraint(SpringLayout.VERTICAL_CENTER, cvvField,
+                20, SpringLayout.VERTICAL_CENTER, paymentContent);
+        paymentContent.setLayout(layout2);
+        for (Container l : new Container[]{cvvField, ccNumber, sccNumber, enterCC, panel2}) {
+            paymentContent.add(l);
+        }
+
+        Container c1 = new Container();
+        c1.setLayout(new BorderLayout(10, 10));
+        c1.add(summary, BorderLayout.EAST);
+        bottomBar.add(c1, BorderLayout.CENTER);
+        bottomBar.add(bNext, BorderLayout.EAST);
+        bottomBar.setVisible(false);
 
         shop.setLayout(new BorderLayout(10, 10));
         shop.add(navBar, BorderLayout.NORTH);
-        shop.add(sideMenu, BorderLayout.WEST);
-        shop.add(pane, BorderLayout.CENTER);
+        shop.add(content, BorderLayout.CENTER);
+        shop.add(bottomBar, BorderLayout.SOUTH);
+
         setLayout(new CardLayout(10, 10));
         add(shop);
     }
@@ -212,76 +345,155 @@ public class ShopApplet extends Applet implements ActionListener {
 
     public void actionPerformed(ActionEvent e) {
         Object o = e.getSource();
-        if (o == next) {
-            if (isOnHome()) {
-                next.setText("Check out");
-                next.setIcon(null);
-                back.setVisible(true);
-                shopItemList.setListData(cartItems);
-            } else if (isOnCart()) {
-                initDelivery();
-            } else if (page == 3) {
-                initPayment();
+        if (o == next || o == bNext) {
+            switch (page) {
+                case HOME:
+                    initCart();
+                    break;
+                case SEARCH:
+                    initHome();
+                    initCart();
+                    break;
+                case CART:
+                    initDelivery();
+                    break;
+                case DELIVERY_OPTIONS:
+                    initPayment();
+                    break;
+                case PAYMENT:
+                    JOptionPane optionPane;
+                    if (cvvField.getText().equals(CVV)) {
+                        optionPane = new JOptionPane("Thank you for purching", JOptionPane.PLAIN_MESSAGE,
+                                JOptionPane.CLOSED_OPTION);
+                        initHome();
+                    } else {
+                        optionPane = new JOptionPane("Invalid CVV", JOptionPane.WARNING_MESSAGE,
+                                JOptionPane.DEFAULT_OPTION);
+                    }
+                    final JDialog dialog = new JDialog((Frame) null, "Message", true);
+                    optionPane.addPropertyChangeListener(new PropertyChangeListener() {
+                        public void propertyChange(PropertyChangeEvent e) {
+                            if (dialog.isVisible() && e.getPropertyName().equals(JOptionPane.VALUE_PROPERTY)) {
+                                dialog.setVisible(false);
+                            }
+                        }
+                    });
+                    dialog.setContentPane(optionPane);
+                    dialog.setLocationRelativeTo(null);
+                    dialog.pack();
+                    dialog.setVisible(true);
+                    break;
             }
+            System.out.println(page);
         } else if (o == back) {
-            searchBar.setText("Search...");
-            key = "";
-            updateList();
-            back.setVisible(false);
-            if (isOnHome()) {
-                next.setText("Cart (" + cartItems.size() + ")");
-            }
-        } else if (o == reset) {
-            // categoryOption.setSelectedIndex(0);
-            sortOption.setSelectedIndex(0);
-            updateList();
-        } else if (o == buy) {
-            int[] is = shopItemList.getSelectedIndices();
+            switch (page) {
+                case CART:
+                case SEARCH:
+                    initHome();
+                    break;
+                case PAYMENT:
+                    initDelivery();
+                    break;
+                case DELIVERY_OPTIONS:
+                    initCart();
+                    break;
 
+            }
+            System.out.println(page);
+        } else if (o == reset) {
+            reset();
+            updateList();
+        } else if (o.equals(action)) {
+            int[] is = itemList.getSelectedIndices();
             if (is.length != 0) {
                 ProductList pl = new ProductList();
-                for (int i : is) {
-                    pl.add(shopItems.get(i));
+                switch (page) {
+                    case SEARCH:
+                    case HOME:
+                        for (int i : is) {
+                            pl.add(shopItems.get(i));
+                        }
+                        cartItems.addAll(pl);
+                        db.removeAll(pl);
+                        shopItems.removeAll(pl);
+                        next.setText("Cart (" + cartItems.size() + ")");
+                        itemList.setListData(shopItems);
+                        if (page == HOME) {
+                            if (shopItems.isEmpty()) {
+                                emptyMSG.setText("Done for today :)");
+                                shop.remove(pane);
+                                shop.add(emptyMSG, BorderLayout.CENTER);
+                            } else {
+                                shop.add(pane, BorderLayout.CENTER);
+                                shop.remove(emptyMSG);
+                            }
+                        }
+                        break;
+                    case CART:
+                        for (int i : is) {
+                            pl.add(cartItems.get(i));
+                        }
+                        cartItems.removeAll(pl);
+                        db.addAll(pl);
+                        shopItems.addAll(pl);
+                        next.setText("Check out (" + cartItems.size() + ")");
+                        itemList.setListData(cartItems);
+                        if (cartItems.isEmpty()) {
+                            emptyMSG.setText(CART_MSG);
+                            next.setVisible(false);
+                            shop.remove(pane);
+                            shop.add(emptyMSG, BorderLayout.CENTER);
+                            summary.setVisible(false);
+                        } else {
+                            total = 0;
+                            for (Product p : cartItems) {
+                                total += p.price;
+                            }
+                            next.setVisible(true);
+                            summary.setText("Total: " + total);
+                            summary.setVisible(true);
+                            shop.add(pane, BorderLayout.CENTER);
+                            shop.remove(emptyMSG);
+                        }
+                        break;
                 }
-
-                cartItems.addAll(pl);
-                db.removeAll(pl);
-                shopItems.removeAll(pl);
-                shopItemList.setListData(shopItems);
-                next.setText("Cart (" + cartItems.size() + ")");
-            }
-            buy.setVisible(false);
-        }
-
-        if (isOnHome()) {
-            if (shopItems.isEmpty()) {
-                emptyMSG.setText("Shop Empty...  Come back later");
-                shop.remove(pane);
-                shop.add(emptyMSG, BorderLayout.CENTER);
                 repaint();
-                empty = true;
-            } else {
-                shop.remove(emptyMSG);
-                shop.add(pane, BorderLayout.CENTER);
-                repaint();
+                action.setVisible(false);
             }
         }
     }
 
+    private void reset() {
+        for (JCheckBox box : catOptions) {
+            box.setSelected(false);
+        }
+        sortOption.setSelectedIndex(0);
+    }
+
     private void filter() {
         shopItems = new ProductList(db);
-        int sI = sortOption.getSelectedIndex(), cI = 0;//categoryOption.getSelectedIndex();
-        reset.setVisible(sI != 0 || cI != 0);
+        int sI = sortOption.getSelectedIndex();
+        selectedCat.clear();
+        for (int i = 0; i < catOptions.length; i++) {
+            if (catOptions[i].isSelected()) {
+                selectedCat.add(i);
+            }
+        }
+        reset.setVisible(sI != 0 || !selectedCat.isEmpty());
 
         if (!reset.isVisible()) {
             return;
         }
 
-        if (cI != 0) {
-            for (Category c : Category.values()) {
-                if (cI == c.ordinal()) {
-                    shopItems.filter(c);
-                    break;
+        if (!selectedCat.isEmpty()) {
+            shopItems.clear();
+            for (int i : selectedCat) {
+                for (Category c : Category.values()) {
+                    if (i == c.ordinal()) {
+                        ProductList temp = new ProductList(db);
+                        shopItems.addAll(temp.filter(c));
+                        break;
+                    }
                 }
             }
         }
@@ -300,7 +512,6 @@ public class ShopApplet extends Applet implements ActionListener {
                 shopItems.sortByCategory(sI == 6);
                 break;
         }
-
     }
 
     private void updateList() {
@@ -308,150 +519,144 @@ public class ShopApplet extends Applet implements ActionListener {
         if (!iskeyAvilable()) {
             back.setVisible(false);
         } else {
+            page = SEARCH;
             shopItems = shopItems.search(key);
             back.setVisible(true);
         }
 
-        shopItemList.setListData(shopItems);
-
+        itemList.setListData(shopItems);
         if (shopItems.isEmpty()) {
-            shop.remove(pane);
-            shop.add(emptyMSG, BorderLayout.CENTER);
-            repaint();
+            content.remove(pane);
+            content.add(emptyMSG, BorderLayout.CENTER);
         } else {
-            shop.remove(emptyMSG);
-            shop.add(pane, BorderLayout.CENTER);
-            repaint();
+            content.remove(emptyMSG);
+            content.add(pane, BorderLayout.CENTER);
         }
+        repaint();
     }
 
     private boolean iskeyAvilable() {
         return !key.isEmpty();
     }
 
-    private boolean isOnCart() {
-        return next.getText().contains("Check out") && searchBar.getText().equals("Search...");
+    private void initHome() {
+        next.setIcon(cartIcon);
+        next.setText("Cart (" + cartItems.size() + ")");
+        action.setIcon(addIcon);
+        action.setToolTipText("Add to Cart");
+
+        switch (page) {
+            case CART:
+                itemList.setListData(shopItems);
+                if (cartItems.isEmpty()) {
+                    next.setVisible(true);
+                    shop.remove(emptyMSG);
+                    shop.add(pane, BorderLayout.CENTER);
+                }
+                bottomBar.setVisible(false);
+                break;
+            case SEARCH:
+                key = "";
+                searchBar.setText("Search...");
+                sideMenu.setVisible(false);
+                reset();
+                updateList();
+                break;
+            case PAYMENT:
+                itemList.setListData(shopItems);
+                for (Container c : new Container[]{next, pane}) {
+                    c.setVisible(true);
+                }
+                shop.remove(paymentContent);
+                navBar.remove(title);
+                navBar.add(searchBar, BorderLayout.CENTER);
+                bottomBar.setVisible(false);
+                break;
+        }
+        back.setVisible(false);
+        page = HOME;
+        repaint();
     }
 
-    private boolean isOnHome() {
-        return next.getText().contains("Cart");
-    }
+    private void initCart() {
+        switch (page) {
+            case HOME:
+                action.setToolTipText("Remove from Cart");
+                back.setVisible(true);
+                next.setText("Check out (" + cartItems.size() + ")");
+                next.setIcon(checkOutIcon);
+                itemList.setListData(cartItems);
+                action.setIcon(removeIcon);
 
-    Container c1 = new Container();
-    JLabel title = new JLabel("Delivery Options");
+                if (cartItems.isEmpty()) {
+                    next.setVisible(false);
+                    emptyMSG.setText(CART_MSG);
+                    shop.remove(pane);
+                    shop.add(emptyMSG, BorderLayout.CENTER);
+                } else {
+                    total = 0;
+                    for (Product p : cartItems) {
+                        total += p.price;
+                    }
+                    bottomBar.setVisible(true);
+                    next.setVisible(true);
+                    summary.setVisible(true);
+                    summary.setText("Total: " + total);
+                    shop.add(pane, BorderLayout.CENTER);
+                    shop.remove(emptyMSG);
+                }
+                break;
+            case DELIVERY_OPTIONS:
+                if (itemList.getSelectedIndices().length > 0) {
+                    action.setVisible(true);
+                }
+                bNext.setVisible(false);
+                next.setVisible(true);
+                pane.setVisible(true);
+                shop.remove(deliveryContent);
+                navBar.add(searchBar, BorderLayout.CENTER);
+                navBar.remove(title);
+        }
+        page = CART;
+        bNext.setVisible(false);
+
+        repaint();
+    }
 
     private void initDelivery() {
-        shop.removeAll();
+        switch (page) {
+            case CART:
+                for (Container c : new Container[]{action, next, pane}) {
+                    c.setVisible(false);
+                }
+                navBar.remove(searchBar);
+                navBar.add(title, BorderLayout.CENTER);
+                bNext.setVisible(true);
+                break;
+            case PAYMENT:
+                shop.remove(paymentContent);
+                break;
 
-        Container c2 = new Container();
-        JRadioButton standardButton = new JRadioButton("Standard Delivery-Expect package to be delivered in 7 working days");
-        JRadioButton expressButton = new JRadioButton("Express Delivery-Expect package to be delivered tomorrow: +Rs 250");
-        //standardButton.setPreferredSize(new Dimension(425, 50));
-        //expressButton.setPreferredSize(new Dimension(425, 50));
-        standardButton.setOpaque(false);
-        expressButton.setOpaque(false);
-        standardButton.setForeground(Color.WHITE);
-        expressButton.setForeground(Color.WHITE);
-        Font f = new Font(null, Font.BOLD, 14);
-        standardButton.setFont(f);
-        expressButton.setFont(f);
-        SpringLayout layout = new SpringLayout();
-        c1.setLayout(layout);
-        c2.setLayout(new BorderLayout(10, 10));
-        layout.putConstraint(SpringLayout.HORIZONTAL_CENTER, standardButton,
-                0, SpringLayout.HORIZONTAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.VERTICAL_CENTER, standardButton,
-                -30, SpringLayout.VERTICAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.HORIZONTAL_CENTER, expressButton,
-                0, SpringLayout.HORIZONTAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.VERTICAL_CENTER, expressButton,
-                30, SpringLayout.VERTICAL_CENTER, c1);
-        c1.add(standardButton);
-        c1.add(expressButton);
-        standardButton.setSelected(true);
+        }
 
-        standardButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                expressButton.setSelected(false);
-            }
-        });
-        expressButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                standardButton.setSelected(false);
-            }
-        });
+        bNext.setIcon(payIcon);
+        bNext.setText("Proceed To Payment");
+        title.setText("Delivery Options");
+        shop.add(deliveryContent, BorderLayout.CENTER);
 
-        title.setFont(new Font(null, Font.BOLD, 20));
-        title.setForeground(Color.WHITE);
-
-        navBar.removeAll();
-        navBar.add(back, BorderLayout.WEST);
-        navBar.add(title, BorderLayout.CENTER);
-
-        next.setIcon(new ImageIcon(getImage(getCodeBase(), "pay.png")));
-        next.setText("Proceed To Payment");
-        c2.add(next, BorderLayout.EAST);
-        next.setVisible(true);
-        title.setVisible(true);
-        shop.add(navBar, BorderLayout.NORTH);
-        shop.add(c1, BorderLayout.CENTER);
-        shop.add(c2, BorderLayout.SOUTH);
-        page = 3;
+        page = DELIVERY_OPTIONS;
         repaint();
     }
 
     private void initPayment() {
-        c1.removeAll();
-        next.setText("Pay");
+        page = PAYMENT;
+        summary.setText("Total: " + (total + extra));
+        bNext.setText("Pay");
         title.setText("Payment");
-        SpringLayout layout = new SpringLayout();
-        c1.setLayout(layout);
-        JPanel panel2 = new JPanel();
-        panel2.setPreferredSize(new Dimension(440, 150));
-        panel2.setOpaque(false);
-        JLabel CCInfo = new JLabel("Credit Card Information");
-        JLabel CCNumberText = new JLabel("Saved CC Number:");
-        JLabel CCNumber = new JLabel("XXXX-XXXX-XXXX-6540");
-        JLabel ENTERCVV = new JLabel("Enter CVV:");
-        JPasswordField CVV = new JPasswordField(3);
-        CCInfo.setForeground(Color.WHITE);
-        CCNumber.setForeground(Color.WHITE);
-        CCNumberText.setForeground(Color.WHITE);
-        ENTERCVV.setForeground(Color.WHITE);
-        layout.putConstraint(SpringLayout.HORIZONTAL_CENTER, CCInfo,
-                30, SpringLayout.HORIZONTAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.VERTICAL_CENTER, CCInfo,
-                -50, SpringLayout.VERTICAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.VERTICAL_CENTER, ENTERCVV,
-                20, SpringLayout.VERTICAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.HORIZONTAL_CENTER, ENTERCVV,
-                -100, SpringLayout.HORIZONTAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.HORIZONTAL_CENTER, panel2,
-                0, SpringLayout.HORIZONTAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.VERTICAL_CENTER, panel2,
-                0, SpringLayout.VERTICAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.HORIZONTAL_CENTER, CVV,
-                20, SpringLayout.HORIZONTAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.VERTICAL_CENTER, CVV,
-                20, SpringLayout.VERTICAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.HORIZONTAL_CENTER, CCNumber,
-                100, SpringLayout.HORIZONTAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.VERTICAL_CENTER, CCNumber,
-                -20, SpringLayout.VERTICAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.HORIZONTAL_CENTER, CCNumberText,
-                -100, SpringLayout.HORIZONTAL_CENTER, c1);
-        layout.putConstraint(SpringLayout.VERTICAL_CENTER, CCNumberText,
-                -20, SpringLayout.VERTICAL_CENTER, c1);
-        panel2.setBorder(BorderFactory.createLineBorder(Color.WHITE, 3));
-        CCInfo.setPreferredSize(new Dimension(200, 40));
-        CCNumber.setPreferredSize(new Dimension(200, 40));
-        panel2.setPreferredSize(new Dimension(440, 150));
-        c1.add(CVV);
-        c1.add(CCNumber);
-        c1.add(CCInfo);
-        c1.add(CCNumberText);
-        c1.add(ENTERCVV);
-        c1.add(panel2);
+        shop.remove(deliveryContent);
+        shop.add(paymentContent, BorderLayout.CENTER);
+
         repaint();
     }
+
 }

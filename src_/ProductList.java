@@ -1,7 +1,6 @@
 package product;
 
 import java.util.*;
-import ui.ListItem;
 import utilites.*;
 
 /*Category: 
@@ -30,28 +29,28 @@ public class ProductList extends Vector<Product> {
 
     //TODO: remove enum
     public enum Category {
-        All, APPLIANCES, BOOKS, ELECTRONICS, GROCERY, MEDICINES, TOYS
+        Appliances, Books, Electronics, Fashion, Grocery, Medicines, Toys
     }
 
     public static ProductList getDatabase() {
         ProductList all = new ProductList();
         all.add(new Product("Google Pixel 2",
-                "A android smartphone by google", 61000, Category.APPLIANCES));
+                "A android smartphone by google", 61000, Category.Appliances));
         all.add(new Product("Schindler's List",
-                "Book about a greedy German businessman", 1000, Category.BOOKS));
+                "Book about a greedy German businessman", 1000, Category.Books));
         all.add(new Product("Whirlpool Single Door Refrigerators",
-                "A SmartFridge with 3 star BEE energy rating", 10490, Category.APPLIANCES));
+                "A SmartFridge with 3 star BEE energy rating", 10490, Category.Appliances));
         all.add(new Product("Voltas 1.4 Ton 3 Star Split AC",
-                "A split ac with Sleep mode and Turbo mode ", 27990, Category.APPLIANCES));
+                "A split ac with Sleep mode and Turbo mode ", 27990, Category.Appliances));
         all.add(new Product("HUL Pureit Advanced RO+UV 5-Litre Water Purifier",
                 "The Pureit purifier guarantees that you will get as safe as boiled water",
-                8399, Category.APPLIANCES));
+                8399, Category.Appliances));
         all.add(new Product("Saffire Kids Twist Scooter",
                 "Children can get moving on the Saffire Twist Scooter and gain confidence with speed and balance",
-                1299, Category.TOYS));
+                1299, Category.Toys));
         all.add(new Product("Gencliq Flying Remote Control Helicopter",
                 "Suitable for children for the first time engage on RC helicopter",
-                1299, Category.TOYS));
+                1299, Category.Toys));
         all.shuffle();
         return all;
     }

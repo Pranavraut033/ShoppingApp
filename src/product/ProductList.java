@@ -29,7 +29,7 @@ public class ProductList extends Vector<Product> {
 
     //TODO: remove enum
     public enum Category {
-        All, Appliances, Books, Electronics, Fashion, Grocery, Medicines, Toys
+        Appliances, Books, Electronics, Fashion, Grocery, Medicines, Toys
     }
 
     public static ProductList getDatabase() {

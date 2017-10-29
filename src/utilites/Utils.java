@@ -57,7 +57,7 @@ public class Utils {
         }
     }
 
-    private static String[] COMMON_TERMS = new String[]{
+    private final static String[] COMMON_TERMS = new String[]{
         "in", "with", "on", "by", "under", "a", "the",
         "an", "then", "that", "when", "also", "as",
         "get", "you", "will", "used", "gain", "can",
