@@ -11,11 +11,16 @@ public class ListItem extends JTextArea implements ListCellRenderer<Product> {
 
     public void paint(Graphics g) {
         g.setColor(isSelected ? Color.WHITE : Color.decode("#eeeeee"));
-        g.fillRect(10, 10, getWidth() - 20, getHeight() - 20);
-        g.setColor(isSelected ? Color.BLUE : Color.BLACK);
-        g.drawRect(8, 10, getWidth() - 18, getHeight() - 20);
-        g.drawRect(10, 11, getWidth() - 20, getHeight() - 22);
+        g.fillRect(10, 5, getWidth() - 20, getHeight() - 10);
+        g.setColor(isSelected ? Color.BLUE : Color.DARK_GRAY);
+        drawBorder(g, 3);
         super.paint(g);
+    }
+
+    private void drawBorder(Graphics g, int t) {
+        for (int i = isSelected ? 9 : 10, j = isSelected ? 4 : 5, k = 0; k < t; i++, j++, k++) {
+            g.drawRect(i, j, getWidth() - 2 * i, getHeight() - 2 * j);
+        }
     }
 
     public Container getListCellRendererComponent(JList<? extends Product> jlist, Product product, int index, boolean isSelected, boolean cellHasFocus) {
@@ -31,9 +36,10 @@ public class ListItem extends JTextArea implements ListCellRenderer<Product> {
             setForeground(Color.decode("#212121"));
         }
 
-        Border paddingBorder = new EmptyBorder(5, 20, 5, 20);
+        Border paddingBorder = new EmptyBorder(0, 20, 0, 20);
 
         setBorder(paddingBorder);
         return this;
     }
+
 }
