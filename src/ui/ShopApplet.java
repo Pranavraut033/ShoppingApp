@@ -15,6 +15,8 @@ import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.GridLayout;
 import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -23,6 +25,8 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Vector;
@@ -100,8 +104,8 @@ public class ShopApplet extends Applet implements ActionListener {
     JList<Product> featuredItemsList = new JList();
     JScrollPane featuredPanel = new JScrollPane(featuredItemsList);
     JLabel appLabel = new JLabel("Shop Items");
-    JList<Product> itemList = new JList<>();
-    JScrollPane panel = new JScrollPane(itemList);
+    JList<Product> shopItemList = new JList<>();
+    JScrollPane panel = new JScrollPane(shopItemList);
     JLabel emptyMSG = new JLabel();
 
     Container deliveryContainer = new Container();
@@ -235,12 +239,28 @@ public class ShopApplet extends Applet implements ActionListener {
         panel.setOpaque(false);
         panel.getViewport().setOpaque(false);
 
-        itemList.setListData(shopItems);
-        itemList.setCellRenderer(new ListItem());
-        itemList.setOpaque(false);
-        itemList.addListSelectionListener(new ListSelectionListener() {
+        shopItemList.setListData(shopItems);
+        shopItemList.setCellRenderer(new ListItem(getCodeBase(), false));
+        shopItemList.setOpaque(false);
+        shopItemList.addMouseListener(new MouseAdapter() {
+            long p = 0, n;
+
+            public void mouseClicked(MouseEvent me) {
+                if (me.getButton() == MouseEvent.BUTTON1) {
+                    if (p == 0) {
+                        p = System.currentTimeMillis();
+                    } else {
+                        if (System.currentTimeMillis() - p < 300) {
+                        } else {
+                            p = System.currentTimeMillis();
+                        }
+                    }
+                }
+            }
+        });
+        shopItemList.addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent lse) {
-                int[] is = itemList.getSelectedIndices();
+                int[] is = shopItemList.getSelectedIndices();
                 action.setVisible(is.length != 0);
             }
         });
@@ -305,8 +325,10 @@ public class ShopApplet extends Applet implements ActionListener {
         featured.add(featuredPanel, BorderLayout.CENTER);
         featured.add(appLabel, BorderLayout.SOUTH);
 
-        featuredItemsList.setVisibleRowCount(1);
-        featuredItemsList.setCellRenderer(new ListItem());
+        featuredItemsList.setLayoutOrientation(JList.VERTICAL_WRAP);
+        featuredItemsList.setFixedCellWidth(getWidth() / 2);
+        featuredItemsList.setVisibleRowCount(2);
+        featuredItemsList.setCellRenderer(new ListItem(getCodeBase(), true));
         featuredItemsList.setOpaque(false);
         featuredItemsList.addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent lse) {
@@ -344,8 +366,16 @@ public class ShopApplet extends Applet implements ActionListener {
                 standardButton.setSelected(false);
             }
         });
+        JPanel jp = new JPanel();
+        jp.setPreferredSize(new Dimension(540, 125));
+        jp.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY, 3));
+        jp.setOpaque(false);
 
         SpringLayout layout1 = new SpringLayout();
+        layout1.putConstraint(SpringLayout.HORIZONTAL_CENTER, jp,
+                0, SpringLayout.HORIZONTAL_CENTER, deliveryContainer);
+        layout1.putConstraint(SpringLayout.VERTICAL_CENTER, jp,
+                0, SpringLayout.VERTICAL_CENTER, deliveryContainer);
         layout1.putConstraint(SpringLayout.HORIZONTAL_CENTER, standardButton,
                 0, SpringLayout.HORIZONTAL_CENTER, deliveryContainer);
         layout1.putConstraint(SpringLayout.VERTICAL_CENTER, standardButton,
@@ -356,6 +386,7 @@ public class ShopApplet extends Applet implements ActionListener {
                 30, SpringLayout.VERTICAL_CENTER, deliveryContainer);
         deliveryContainer.setLayout(layout1);
         deliveryContainer.add(standardButton);
+        deliveryContainer.add(jp);
         deliveryContainer.add(expressButton);
 
         SpringLayout layout2 = new SpringLayout();
@@ -375,11 +406,11 @@ public class ShopApplet extends Applet implements ActionListener {
         layout2.putConstraint(SpringLayout.HORIZONTAL_CENTER, panel2,
                 0, SpringLayout.HORIZONTAL_CENTER, paymentConatiner);
         layout2.putConstraint(SpringLayout.VERTICAL_CENTER, panel2,
-                0, SpringLayout.VERTICAL_CENTER, paymentConatiner);
+                -10, SpringLayout.VERTICAL_CENTER, paymentConatiner);
         layout2.putConstraint(SpringLayout.HORIZONTAL_CENTER, ccInfo,
                 30, SpringLayout.HORIZONTAL_CENTER, paymentConatiner);
         layout2.putConstraint(SpringLayout.VERTICAL_CENTER, ccInfo,
-                -50, SpringLayout.VERTICAL_CENTER, paymentConatiner);
+                -60, SpringLayout.VERTICAL_CENTER, paymentConatiner);
         layout2.putConstraint(SpringLayout.HORIZONTAL_CENTER, sccNumber,
                 -100, SpringLayout.HORIZONTAL_CENTER, paymentConatiner);
         layout2.putConstraint(SpringLayout.VERTICAL_CENTER, sccNumber,
@@ -391,7 +422,7 @@ public class ShopApplet extends Applet implements ActionListener {
         layout2.putConstraint(SpringLayout.VERTICAL_CENTER, ccNumber,
                 -20, SpringLayout.VERTICAL_CENTER, paymentConatiner);
         layout2.putConstraint(SpringLayout.HORIZONTAL_CENTER, enterCC,
-                -100, SpringLayout.HORIZONTAL_CENTER, paymentConatiner);
+                -70, SpringLayout.HORIZONTAL_CENTER, paymentConatiner);
         layout2.putConstraint(SpringLayout.HORIZONTAL_CENTER, cvvField,
                 20, SpringLayout.HORIZONTAL_CENTER, paymentConatiner);
         layout2.putConstraint(SpringLayout.VERTICAL_CENTER, cvvField,
@@ -399,6 +430,10 @@ public class ShopApplet extends Applet implements ActionListener {
         paymentConatiner.setLayout(layout2);
         for (Container l : new Container[]{ccInfo, cvvField, ccNumber, sccNumber, enterCC, panel2}) {
             paymentConatiner.add(l);
+            if (l instanceof JLabel) {
+                ((JLabel) l).setFont(new Font(null, Font.BOLD, 14));
+            }
+
         }
 
         Container c1 = new Container();
@@ -415,6 +450,7 @@ public class ShopApplet extends Applet implements ActionListener {
 
         setLayout(new CardLayout(7, 7));
         add(shop);
+        moveToCenter();
     }
 
     public void paint(Graphics graphics) {
@@ -488,7 +524,7 @@ public class ShopApplet extends Applet implements ActionListener {
             resetFilter();
             updateList();
         } else if (o.equals(action)) {
-            int[] is = itemList.getSelectedIndices(), i1s = featuredItemsList.getSelectedIndices();
+            int[] is = shopItemList.getSelectedIndices(), i1s = featuredItemsList.getSelectedIndices();
             if (is.length != 0 || i1s.length != 0) {
                 ProductList pl = new ProductList();
                 switch (page) {
@@ -508,7 +544,7 @@ public class ShopApplet extends Applet implements ActionListener {
                         featuredItems.removeAll(pl);
                         shopItems.removeAll(pl);
                         next.setText("Cart (" + cartItems.size() + ")");
-                        itemList.setListData(shopItems);
+                        shopItemList.setListData(shopItems);
                         if (page == HOME) {
                             if (shopItems.isEmpty()) {
                                 emptyMSG.setText(HOME_MSG);
@@ -528,7 +564,7 @@ public class ShopApplet extends Applet implements ActionListener {
                         db.addAll(pl);
                         shopItems.addAll(pl);
                         next.setText("Check out (" + cartItems.size() + ")");
-                        itemList.setListData(cartItems);
+                        shopItemList.setListData(cartItems);
                         if (cartItems.isEmpty()) {
                             emptyMSG.setText(CART_MSG);
                             next.setVisible(false);
@@ -615,7 +651,7 @@ public class ShopApplet extends Applet implements ActionListener {
             back.setVisible(true);
         }
 
-        itemList.setListData(shopItems);
+        shopItemList.setListData(shopItems);
         if (shopItems.isEmpty()) {
             content.remove(mainContainer);
             content.add(emptyMSG, BorderLayout.CENTER);
@@ -630,50 +666,75 @@ public class ShopApplet extends Applet implements ActionListener {
         return !key.isEmpty();
     }
 
+    private void moveToCenter() {
+        Container c = getParent();
+        Frame frame = null;
+        int i = 0;
+        while (c.getParent() != null) {
+            c = c.getParent();
+            System.out.println(c);
+        }
+        if (c instanceof Frame) {
+            frame = (Frame) c;
+        }
+        if (frame != null) {
+            frame.setLocationRelativeTo(null);
+            frame.setTitle("Shop");
+        }
+    }
+
     private void initHome() {
         next.setIcon(cartIcon);
         next.setText("Cart (" + cartItems.size() + ")");
         action.setIcon(addIcon);
         action.setToolTipText("Add to Cart");
-
         switch (page) {
             case CART:
-                itemList.setListData(shopItems);
+                shopItemList.setListData(shopItems);
+                appLabel.setText("Shop Items");
+                bottomBar.setVisible(false);
                 if (cartItems.isEmpty()) {
                     next.setVisible(true);
                     shop.remove(emptyMSG);
                     shop.add(mainContainer, BorderLayout.CENTER);
                 }
-                if (shopItems.isEmpty()) {
-                    emptyMSG.setText(HOME_MSG);
-                    shop.remove(mainContainer);
-                    shop.add(emptyMSG, BorderLayout.CENTER);
-                }
-                bottomBar.setVisible(false);
                 break;
             case SEARCH:
                 searchBar.setText("Search...");
                 key = "";
+                featured.setVisible(true);
                 sideMenu.setVisible(false);
                 resetFilter();
                 updateList();
                 break;
             case PAYMENT:
-                itemList.setListData(shopItems);
-                for (Container c : new Container[]{next, mainContainer}) {
-                    c.setVisible(true);
+                featuredItemsList.setListData(featuredItems);
+                shopItemList.setListData(shopItems);
+                for (Container c : new Container[]{next, mainContainer, bottomBar}) {
+                    c.setVisible(c != bottomBar);
                 }
                 shop.remove(paymentConatiner);
                 navBar.remove(title);
                 navBar.add(searchBar, BorderLayout.CENTER);
-                bottomBar.setVisible(false);
                 updateList();
-                if (!featuredItems.isEmpty()) {
-                    featuredLabel.setVisible(true);
-                    featuredPanel.setVisible(true);
-                    featuredItemsList.setListData(featuredItems);
-                }
+
+                featuredItems.clear();
+                featuredItems.addAll(db.getSimilar(purchaseItems));
+                shopItems.removeAll(featuredItems);
                 break;
+        }
+        if (shopItems.isEmpty()) {
+            emptyMSG.setText(HOME_MSG);
+            shop.remove(panel);
+            if (featuredItems.isEmpty()) {
+                shop.removeAll();
+                return;
+            }
+            shop.add(emptyMSG, BorderLayout.CENTER);
+        }
+        if (!featuredItems.isEmpty()) {
+            featuredLabel.setVisible(true);
+            featuredPanel.setVisible(true);
         }
         back.setVisible(false);
         page = HOME;
@@ -687,9 +748,11 @@ public class ShopApplet extends Applet implements ActionListener {
                 back.setVisible(true);
                 next.setText("Check out (" + cartItems.size() + ")");
                 next.setIcon(checkOutIcon);
-                itemList.setListData(cartItems);
+                shopItemList.setListData(cartItems);
                 action.setIcon(removeIcon);
-
+                featuredLabel.setVisible(false);
+                featuredPanel.setVisible(false);
+                appLabel.setText("Cart Items");
                 if (cartItems.isEmpty()) {
                     next.setVisible(false);
                     emptyMSG.setText(CART_MSG);
@@ -700,21 +763,21 @@ public class ShopApplet extends Applet implements ActionListener {
                     for (Product p : cartItems) {
                         total += p.price;
                     }
-                    bottomBar.setVisible(true);
-                    next.setVisible(true);
-                    summary.setVisible(true);
+                    for (Container c : new Container[]{bottomBar, next, summary}) {
+                        c.setVisible(true);
+                    }
                     summary.setText("Total: " + total);
                     shop.add(mainContainer, BorderLayout.CENTER);
                     shop.remove(emptyMSG);
                 }
                 break;
             case DELIVERY_OPTIONS:
-                if (itemList.getSelectedIndices().length > 0) {
+                if (shopItemList.getSelectedIndices().length > 0) {
                     action.setVisible(true);
                 }
-                bNext.setVisible(false);
-                next.setVisible(true);
-                mainContainer.setVisible(true);
+                for (Container c : new Container[]{bNext, next, mainContainer}) {
+                    c.setVisible(c != bNext);
+                }
                 shop.remove(deliveryContainer);
                 navBar.add(searchBar, BorderLayout.CENTER);
                 navBar.remove(title);
