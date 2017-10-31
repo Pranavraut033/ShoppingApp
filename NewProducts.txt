@@ -1,0 +1,53 @@
+all.add(new Product("LG OLED 4K TV",
+                "A wifi enabled smart TV with 60 Hz refresh rate & an incredible sound system",
+                89499, Category.Electronics));	
+all.add(new Product("Sandisk 16GB Pendrive",
+                "Portable & a high speed storage device",
+                349, Category.Electronics));	
+all.add(new Product("Sennheiser HD 180 Over-Ear Headphones (Black)",
+                "Over the head earphones with superior sound quality",
+                990, Category.Electronics));	
+all.add(new Product("HP DeskJet Ink Advantage 2135 All-in-One Printer",
+                "Copy, scan & print through a single compact device",
+                4790, Category.Electronics));
+all.add(new Product("iPad Mini 2 Tablet",
+                "The smallest & the fastest tablet with a powerful A8X chip & touch-ID",
+                34990, Category.Electronics));
+all.add(new Product("Core Python Programming",
+                "The complete reference for Python",
+                599, Category.Books));	
+all.add(new Product("Da-Vinci Code",
+                "A book about a mysterious & a bizzare murder",
+                599, Category.Books));
+all.add(new Product("The Power Of Sub-Conscious Mind",
+                "This book provides a complete guide for controlling the superior mind",
+                399, Category.Books));		
+all.add(new Product("To Kill a Mockingbird",
+                "An all-time best seller about growing up in extraordinary circumstances",
+                699, Category.Books));	
+all.add(new Product("The Martian",
+                "A fiction based novel about an astronaut",
+                449, Category.Books));	
+all.add(new Product("Philips Coffee Maker",
+                "A budget coffee brewer",
+                849, Category.Appliances));		
+all.add(new Product("Godrej Fully Automatic Washing Machine",
+                "Top load easy to use washing machine",
+                1449, Category.Appliances));	
+all.add(new Product("Bajaj 1000 Watt Iron",
+                "A plug & play appliance",
+                1449, Category.Appliances));	
+all.add(new Product("LG Microwave",
+                "A microwave with 30 liters of capacity & upto 20 auto cooking options",
+                6449, Category.Appliances));
+all.add(new Product("LG Microwave",
+                "A microwave with 30 liters of capacity & upto 20 auto cooking options",
+                6449, Category.Appliances));
+all.add(new Product("Solimo Permium Almonds 500gm",
+                "High Quality Dry Fruits",
+                449, Category.Appliances));
+
+
+
+
+
