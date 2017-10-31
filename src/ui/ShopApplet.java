@@ -15,8 +15,6 @@ import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.GridLayout;
 import java.awt.Image;
-import java.awt.Toolkit;
-import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -27,6 +25,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Vector;
@@ -51,7 +50,6 @@ import product.Product;
 import product.ProductList;
 import product.ProductList.Category;
 
-@SuppressWarnings({"override", "Convert2Lambda"})
 public class ShopApplet extends Applet implements ActionListener {
 
     final int HOME = 1;
@@ -122,6 +120,23 @@ public class ShopApplet extends Applet implements ActionListener {
     Container bottomBar = new Container();
     JButton bNext;
     JLabel summary = new JLabel();
+    private MouseListener l = new MouseAdapter() {
+        long p = 0, n;
+
+        public void mouseClicked(MouseEvent me) {
+            if (me.getButton() == MouseEvent.BUTTON1) {
+                if (p == 0) {
+                    p = System.currentTimeMillis();
+                } else {
+                    if (System.currentTimeMillis() - p < 300) {
+                        actionPerformed(new ActionEvent(action, 0, null));
+                    } else {
+                        p = System.currentTimeMillis();
+                    }
+                }
+            }
+        }
+    };
 
     public void init() {
         setSize(900, 506);
@@ -242,22 +257,7 @@ public class ShopApplet extends Applet implements ActionListener {
         shopItemList.setListData(shopItems);
         shopItemList.setCellRenderer(new ListItem(getCodeBase(), false));
         shopItemList.setOpaque(false);
-        shopItemList.addMouseListener(new MouseAdapter() {
-            long p = 0, n;
-
-            public void mouseClicked(MouseEvent me) {
-                if (me.getButton() == MouseEvent.BUTTON1) {
-                    if (p == 0) {
-                        p = System.currentTimeMillis();
-                    } else {
-                        if (System.currentTimeMillis() - p < 300) {
-                        } else {
-                            p = System.currentTimeMillis();
-                        }
-                    }
-                }
-            }
-        });
+        shopItemList.addMouseListener(l);
         shopItemList.addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent lse) {
                 int[] is = shopItemList.getSelectedIndices();
@@ -330,6 +330,7 @@ public class ShopApplet extends Applet implements ActionListener {
         featuredItemsList.setVisibleRowCount(2);
         featuredItemsList.setCellRenderer(new ListItem(getCodeBase(), true));
         featuredItemsList.setOpaque(false);
+        featuredItemsList.addMouseListener(l);
         featuredItemsList.addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent lse) {
                 int[] is = featuredItemsList.getSelectedIndices();
@@ -368,7 +369,7 @@ public class ShopApplet extends Applet implements ActionListener {
         });
         JPanel jp = new JPanel();
         jp.setPreferredSize(new Dimension(540, 125));
-        jp.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY, 3));
+        jp.setBorder(BorderFactory.createLineBorder(Color.WHITE, 3));
         jp.setOpaque(false);
 
         SpringLayout layout1 = new SpringLayout();
@@ -500,8 +501,8 @@ public class ShopApplet extends Applet implements ActionListener {
                         }
                     });
                     dialog.setContentPane(optionPane);
-                    dialog.setLocationRelativeTo(null);
                     dialog.pack();
+                    dialog.setLocationRelativeTo(null);
                     dialog.setVisible(true);
 
                     break;
@@ -672,7 +673,6 @@ public class ShopApplet extends Applet implements ActionListener {
         int i = 0;
         while (c.getParent() != null) {
             c = c.getParent();
-            System.out.println(c);
         }
         if (c instanceof Frame) {
             frame = (Frame) c;
@@ -680,6 +680,7 @@ public class ShopApplet extends Applet implements ActionListener {
         if (frame != null) {
             frame.setLocationRelativeTo(null);
             frame.setTitle("Shop");
+            frame.setIconImage(getImage(getCodeBase(), "logo.png"));
         }
     }
 
@@ -726,11 +727,11 @@ public class ShopApplet extends Applet implements ActionListener {
         if (shopItems.isEmpty()) {
             emptyMSG.setText(HOME_MSG);
             shop.remove(panel);
+            shop.add(emptyMSG, BorderLayout.CENTER);
             if (featuredItems.isEmpty()) {
                 shop.removeAll();
                 return;
             }
-            shop.add(emptyMSG, BorderLayout.CENTER);
         }
         if (!featuredItems.isEmpty()) {
             featuredLabel.setVisible(true);

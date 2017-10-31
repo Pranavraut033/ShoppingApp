@@ -1,7 +1,10 @@
 package utilites;
 
-import java.util.*;
-import product.*;
+import java.util.Arrays;
+import java.util.Vector;
+import lib.RandomCollection;
+import product.Product;
+import product.ProductList;
 import product.ProductList.Category;
 
 public class Utils {
@@ -131,8 +134,33 @@ public class Utils {
         return result;
     }
 
-    public static int randomInt(int min, int max) {
-        Random r = new Random();
-        return r.nextInt((max - min) + 1) + min;
+    public static ProductList getSimilarProducts(ProductList db, ProductList list) {
+        ProductList similar = new ProductList(), ref = new ProductList(db);
+        float prop[] = new float[Category.values().length];
+
+        ref.sortByCategory(true);
+        for (Product p : list) {
+            prop[p.category.ordinal()]++;
+        }
+        System.out.println("Frequency: " + Arrays.toString(prop));
+
+        RandomCollection<Category> collection = new RandomCollection<>();
+        //probability of categary
+        for (int i = 0; i < prop.length; i++) {
+            prop[i] /= list.size();
+            collection.add(prop[i], Category.values()[i]);
+        }
+        System.out.println("Probability: " + Arrays.toString(prop));
+
+        for (int i = 0; i < 5; i++) {
+            Category c = collection.next();
+            for (Product p : ref) {
+                if (p.category == c && similar.indexOf(p) == -1) {
+                    similar.add(p);
+                }
+            }
+        }
+        return similar;
     }
+
 }
