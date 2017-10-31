@@ -1,5 +1,5 @@
 /*
-    <applet code="ui\ShopApplet.class" height="506" width="900">
+    <applet code="ui\ShopApplet.class" height="607" width="1080">
     </applet>
  */
 package ui;
@@ -15,6 +15,7 @@ import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.GridLayout;
 import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -50,78 +51,80 @@ import product.Product;
 import product.ProductList;
 import product.ProductList.Category;
 
+@SuppressWarnings("FieldMayBeFinal")
 public class ShopApplet extends Applet implements ActionListener {
 
-    final int HOME = 1;
-    final int SEARCH = 2;
-    final int CART = 3;
-    final int DELIVERY_OPTIONS = 4;
-    final int PAYMENT = 5;
-    final String CVV = "453";
-    final String FILTER_MSG = "Nothing Found... Try changing filter selection";
-    final String CART_MSG = "Cart Empty :( Start Shopping...";
-    final String HOME_MSG = "Done for today :)";
+    private final int HOME = 1;
+    private final int SEARCH = 2;
+    private final int CART = 3;
+    private final int DELIVERY_OPTIONS = 4;
+    private final int PAYMENT = 5;
+    private final String CVV = "453";
+    private final String FILTER_MSG = "Nothing Found... Try changing filter selection";
+    private final String CART_MSG = "Cart Empty :( Start Shopping...";
+    private final String HOME_MSG = "Done for today :)";
+    private final String SEARCH_LONG_MSG = "Nothing Found... Try Typing a longer word...";
 
-    int page = HOME;
-    double total = 0d;
-    int extra = 0;
-    String key = "";
-    ProductList db = ProductList.getDatabase();
-    ProductList shopItems = new ProductList(db);
-    ProductList cartItems = new ProductList();
-    ProductList purchaseItems = new ProductList();
-    ProductList featuredItems = new ProductList();
-    Vector<Integer> selectedCat = new Vector<>();
+    private int page = HOME;
+    private double total = 0d;
+    private int extra = 0;
+    private String key = "";
+    private ProductList db = ProductList.getDatabase();
+    private ProductList shopItems = new ProductList(db);
+    private ProductList cartItems = new ProductList();
+    private ProductList purchaseItems = new ProductList();
+    private ProductList featuredItems = new ProductList();
+    private Vector<Integer> selectedCat = new Vector<>();
 
-    ImageIcon backIcon;
-    ImageIcon cartIcon;
-    ImageIcon addIcon;
-    ImageIcon removeIcon;
-    ImageIcon checkOutIcon;
-    ImageIcon payIcon;
+    private ImageIcon backIcon;
+    private ImageIcon cartIcon;
+    private ImageIcon addIcon;
+    private ImageIcon removeIcon;
+    private ImageIcon checkOutIcon;
+    private ImageIcon payIcon;
 
-    Container shop = new Container();
+    private Container shop = new Container();
 
-    Container navBar = new Container();
-    JButton back;
-    JTextField searchBar = new JTextField("Search...");
-    JLabel title = new JLabel();
-    JButton action;
-    JButton next;
+    private Container navBar = new Container();
+    private JButton back;
+    private JTextField searchBar = new JTextField("Search...");
+    private JLabel title = new JLabel();
+    private JButton action;
+    private JButton next;
 
-    Container content = new Container();
-    Container sideMenu = new Container();
-    JLabel sideTitle = new JLabel("Filters");
-    JComboBox<String> sortOption = new JComboBox<>();
-    JCheckBox[] catOptions = new JCheckBox[7];
-    JButton reset = new JButton("Reset");
+    private Container content = new Container();
+    private Container sideMenu = new Container();
+    private JLabel sideTitle = new JLabel("Filters");
+    private JComboBox<String> sortOption = new JComboBox<>();
+    private JCheckBox[] catOptions = new JCheckBox[7];
+    private JButton reset = new JButton("Reset");
 
-    Container mainContainer = new Container();
-    Container featured = new Container();
-    JLabel featuredLabel = new JLabel("Featured Items");
-    JList<Product> featuredItemsList = new JList();
-    JScrollPane featuredPanel = new JScrollPane(featuredItemsList);
-    JLabel appLabel = new JLabel("Shop Items");
-    JList<Product> shopItemList = new JList<>();
-    JScrollPane panel = new JScrollPane(shopItemList);
-    JLabel emptyMSG = new JLabel();
+    private Container mainContainer = new Container();
+    private Container featured = new Container();
+    private JLabel featuredLabel = new JLabel("Featured Items");
+    private JList<Product> featuredItemsList = new JList();
+    private JScrollPane featuredPanel = new JScrollPane(featuredItemsList);
+    private JLabel appLabel = new JLabel("Shop Items");
+    private JList<Product> shopItemList = new JList<>();
+    private JScrollPane panel = new JScrollPane(shopItemList);
+    private JLabel emptyMSG = new JLabel();
 
-    Container deliveryContainer = new Container();
-    JRadioButton standardButton = new JRadioButton("Standard Delivery-Expect package to be delivered in 7 working days");
-    JRadioButton expressButton = new JRadioButton("Express Delivery-Expect package to be delivered tomorrow: +Rs 250");
+    private Container deliveryContainer = new Container();
+    private JRadioButton standardButton = new JRadioButton("Standard Delivery-Expect package to be delivered in 7 working days");
+    private JRadioButton expressButton = new JRadioButton("Express Delivery-Expect package to be delivered tomorrow: +Rs 250");
 
-    Container paymentConatiner = new Container();
-    JLabel ccInfo = new JLabel("Credit Card Information");
-    JLabel sccNumber = new JLabel("Saved CC Number:");
-    JLabel ccNumber = new JLabel("XXXX-XXXX-XXXX-6540");
-    JLabel enterCC = new JLabel("Enter CVV:");
-    JPasswordField cvvField = new JPasswordField(3);
+    private Container paymentConatiner = new Container();
+    private JLabel ccInfo = new JLabel("Credit Card Information");
+    private JLabel sccNumber = new JLabel("Saved CC Number:");
+    private JLabel ccNumber = new JLabel("XXXX-XXXX-XXXX-6540");
+    private JLabel enterCC = new JLabel("Enter CVV:");
+    private JPasswordField cvvField = new JPasswordField(3);
 
-    Container bottomBar = new Container();
-    JButton bNext;
-    JLabel summary = new JLabel();
+    private Container bottomBar = new Container();
+    private JButton bNext;
+    private JLabel summary = new JLabel();
     private MouseListener l = new MouseAdapter() {
-        long p = 0, n;
+        long p = 0;
 
         public void mouseClicked(MouseEvent me) {
             if (me.getButton() == MouseEvent.BUTTON1) {
@@ -137,9 +140,12 @@ public class ShopApplet extends Applet implements ActionListener {
             }
         }
     };
+    private Dimension screenSize;
 
     public void init() {
-        setSize(900, 506);
+        screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        System.out.println(screenSize.getHeight());
+        setSize((int) (screenSize.getWidth() * .95), (int) (screenSize.getHeight() * .8));
 
         backIcon = new ImageIcon(getImage(getCodeBase(), "back.png"));
         cartIcon = new ImageIcon(getImage(getCodeBase(), "cart.png"));
@@ -200,6 +206,10 @@ public class ShopApplet extends Applet implements ActionListener {
                 if (page == CART) {
                     initHome();
                 }
+                if (page != SEARCH) {
+                    featuredLabel.setVisible(false);
+                    featuredPanel.setVisible(false);
+                }
                 page = SEARCH;
                 key = searchBar.getText();
                 sideMenu.setVisible(true);
@@ -210,7 +220,7 @@ public class ShopApplet extends Applet implements ActionListener {
 
                 if (shopItems.isEmpty()) {
                     if (key.length() < 3) {
-                        emptyMSG.setText("Nothing Found... Try Typing a longer word...");
+                        emptyMSG.setText(SEARCH_LONG_MSG);
                     } else {
                         emptyMSG.setText("Nothing Found for \"" + key + "\"");
                     }
@@ -242,7 +252,7 @@ public class ShopApplet extends Applet implements ActionListener {
                 if (ie.getStateChange() == ItemEvent.SELECTED) {
                     updateList();
                     if (shopItems.isEmpty()) {
-                        emptyMSG.setText("Nothing Found... Try changing filter selection");
+                        emptyMSG.setText(FILTER_MSG);
                     }
                 }
             }
@@ -264,7 +274,19 @@ public class ShopApplet extends Applet implements ActionListener {
                 action.setVisible(is.length != 0);
             }
         });
+        shopItemList.addKeyListener(new KeyListener() {
+            public void keyTyped(KeyEvent ke) {
+            }
 
+            public void keyPressed(KeyEvent ke) {
+            }
+
+            public void keyReleased(KeyEvent ke) {
+                if (ke.getKeyChar() == KeyEvent.VK_ENTER) {
+                    actionPerformed(new ActionEvent(action, 0, null));
+                }
+            }
+        });
         Container c = new Container();
         c.setLayout(new BorderLayout(7, 7));
         c.add(next, BorderLayout.EAST);
@@ -326,7 +348,7 @@ public class ShopApplet extends Applet implements ActionListener {
         featured.add(appLabel, BorderLayout.SOUTH);
 
         featuredItemsList.setLayoutOrientation(JList.VERTICAL_WRAP);
-        featuredItemsList.setFixedCellWidth(getWidth() / 2);
+        featuredItemsList.setFixedCellWidth(screenSize.width / 3 - 30);
         featuredItemsList.setVisibleRowCount(2);
         featuredItemsList.setCellRenderer(new ListItem(getCodeBase(), true));
         featuredItemsList.setOpaque(false);
@@ -335,6 +357,19 @@ public class ShopApplet extends Applet implements ActionListener {
             public void valueChanged(ListSelectionEvent lse) {
                 int[] is = featuredItemsList.getSelectedIndices();
                 action.setVisible(is.length != 0);
+            }
+        });
+        featuredItemsList.addKeyListener(new KeyListener() {
+            public void keyTyped(KeyEvent ke) {
+            }
+
+            public void keyPressed(KeyEvent ke) {
+            }
+
+            public void keyReleased(KeyEvent ke) {
+                if (ke.getKeyChar() == KeyEvent.VK_ENTER) {
+                    actionPerformed(new ActionEvent(action, 0, null));
+                }
             }
         });
         mainContainer.setLayout(new BorderLayout(7, 7));
@@ -434,7 +469,6 @@ public class ShopApplet extends Applet implements ActionListener {
             if (l instanceof JLabel) {
                 ((JLabel) l).setFont(new Font(null, Font.BOLD, 14));
             }
-
         }
 
         Container c1 = new Container();
@@ -451,6 +485,7 @@ public class ShopApplet extends Applet implements ActionListener {
 
         setLayout(new CardLayout(7, 7));
         add(shop);
+
         moveToCenter();
     }
 
@@ -531,14 +566,11 @@ public class ShopApplet extends Applet implements ActionListener {
                 switch (page) {
                     case SEARCH:
                     case HOME:
-                        if (is.length != 0) {
-                            for (int i : is) {
-                                pl.add(shopItems.get(i));
-                            }
-                        } else {
-                            for (int i : i1s) {
-                                pl.add(featuredItems.get(i));
-                            }
+                        for (int i : is) {
+                            pl.add(shopItems.get(i));
+                        }
+                        for (int i : i1s) {
+                            pl.add(featuredItems.get(i));
                         }
                         cartItems.addAll(pl);
                         db.removeAll(pl);
@@ -555,8 +587,12 @@ public class ShopApplet extends Applet implements ActionListener {
                                 shop.add(mainContainer, BorderLayout.CENTER);
                                 shop.remove(emptyMSG);
                             }
+                            boolean b = featuredItems.isEmpty();
+                            featuredLabel.setVisible(!b);
+                            featuredPanel.setVisible(!b);
                         }
                         break;
+
                     case CART:
                         for (int i : is) {
                             pl.add(cartItems.get(i));
@@ -607,6 +643,12 @@ public class ShopApplet extends Applet implements ActionListener {
                 selectedCat.add(i);
             }
         }
+
+        if (sI == 0 && !purchaseItems.isEmpty() && page == SEARCH) {
+            shopItems = new ProductList(db.getSimilar(purchaseItems, db.size()));
+            System.out.println(shopItems.isEmpty());
+        }
+
         reset.setVisible(sI != 0 || !selectedCat.isEmpty());
 
         if (!reset.isVisible()) {
@@ -689,10 +731,10 @@ public class ShopApplet extends Applet implements ActionListener {
         next.setText("Cart (" + cartItems.size() + ")");
         action.setIcon(addIcon);
         action.setToolTipText("Add to Cart");
+        appLabel.setText("Shop Items");
         switch (page) {
             case CART:
                 shopItemList.setListData(shopItems);
-                appLabel.setText("Shop Items");
                 bottomBar.setVisible(false);
                 if (cartItems.isEmpty()) {
                     next.setVisible(true);
@@ -706,6 +748,7 @@ public class ShopApplet extends Applet implements ActionListener {
                 featured.setVisible(true);
                 sideMenu.setVisible(false);
                 resetFilter();
+                shopItems.shuffle();
                 updateList();
                 break;
             case PAYMENT:
@@ -720,7 +763,7 @@ public class ShopApplet extends Applet implements ActionListener {
                 updateList();
 
                 featuredItems.clear();
-                featuredItems.addAll(db.getSimilar(purchaseItems));
+                featuredItems.addAll(db.getSimilar(purchaseItems, 5));
                 shopItems.removeAll(featuredItems);
                 break;
         }
@@ -733,10 +776,9 @@ public class ShopApplet extends Applet implements ActionListener {
                 return;
             }
         }
-        if (!featuredItems.isEmpty()) {
-            featuredLabel.setVisible(true);
-            featuredPanel.setVisible(true);
-        }
+        boolean b = !featuredItems.isEmpty();
+        featuredLabel.setVisible(b);
+        featuredPanel.setVisible(b);
         back.setVisible(false);
         page = HOME;
         repaint();

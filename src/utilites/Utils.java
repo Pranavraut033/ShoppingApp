@@ -134,29 +134,31 @@ public class Utils {
         return result;
     }
 
-    public static ProductList getSimilarProducts(ProductList db, ProductList list) {
+    public static ProductList getSimilarProducts(ProductList db, ProductList list, int length) {
         ProductList similar = new ProductList(), ref = new ProductList(db);
         float prop[] = new float[Category.values().length];
-
-        ref.sortByCategory(true);
+        RandomCollection<Category> collection = new RandomCollection<>();
+        Arrays.fill(prop, .1f);
+        if (length == db.size()) {
+            Arrays.fill(prop, prop.length);
+        }
         for (Product p : list) {
             prop[p.category.ordinal()]++;
         }
         System.out.println("Frequency: " + Arrays.toString(prop));
-
-        RandomCollection<Category> collection = new RandomCollection<>();
-        //probability of categary
         for (int i = 0; i < prop.length; i++) {
             prop[i] /= list.size();
             collection.add(prop[i], Category.values()[i]);
         }
         System.out.println("Probability: " + Arrays.toString(prop));
-
-        for (int i = 0; i < 5; i++) {
+        ref.sortByCategory(false);
+        while (!ref.isEmpty() && similar.size() < length) {
             Category c = collection.next();
             for (Product p : ref) {
-                if (p.category == c && similar.indexOf(p) == -1) {
+                if (p.category == c) {
                     similar.add(p);
+                    ref.remove(p);
+                    break;
                 }
             }
         }

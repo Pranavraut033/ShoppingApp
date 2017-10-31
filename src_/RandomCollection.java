@@ -14,20 +14,15 @@ public class RandomCollection<E> {
     private double total = 0;
 
     public RandomCollection() {
-        this(new Random());
+        this.random = new Random();
     }
 
-    public RandomCollection(Random random) {
-        this.random = random;
-    }
-
-    public RandomCollection<E> add(double weight, E result) {
+    public void add(double weight, E result) {
         if (weight <= 0) {
-            return this;
+            return;
         }
         total += weight;
         map.put(total, result);
-        return this;
     }
 
     public E next() {
